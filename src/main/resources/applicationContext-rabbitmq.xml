@@ -1,0 +1,262 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:rabbit="http://www.springframework.org/schema/rabbit"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+       http://www.springframework.org/schema/rabbit http://www.springframework.org/schema/rabbit/spring-rabbit.xsd">
+
+	<description>Spring公共配置 </description>
+
+	<!--配置connection-factory，指定连接rabbit server参数 -->
+	<rabbit:connection-factory id="connectionFactory" host="${rabbitmq_host}" port="${rabbitmq_port}" username="${rabbitmq_username}" password="${rabbitmq_password}" virtual-host="${rabbitmq_vhost}"/>
+
+	<!--通过指定下面的admin信息，当前producer中的exchange和queue会在rabbitmq服务器上自动生成 -->
+	<rabbit:admin connection-factory="connectionFactory" />
+	<rabbit:template id="amqpTemplate" connection-factory="connectionFactory" />
+
+	<!-- **************************************充值开始  begin***************************************** -->
+	<!-- 定义调用方充值回调超时队列 和 调用方充值回调队列,按照执行key进行转发 -->
+	<!--定义queue  说明：durable:是否持久化 exclusive: 仅创建者可以使用的私有队列，断开后自动删除 auto_delete: 当所有消费客户端连接断开后，是否自动删除队列-->
+	<rabbit:queue name="recharge_cct" durable="true" auto-delete="false" exclusive="false" >
+		<rabbit:queue-arguments>
+			<entry key="x-dead-letter-exchange" value="ps.ex.recharge" />
+			<entry key="x-dead-letter-routing-key" value="client_callback" />
+		</rabbit:queue-arguments>
+	</rabbit:queue>
+	
+	<rabbit:queue name="recharge_cc" durable="true" auto-delete="false" exclusive="false" />
+	
+	<rabbit:queue name="recharge_act" durable="true" auto-delete="false" exclusive="false" >
+		<rabbit:queue-arguments>
+			<entry key="x-dead-letter-exchange" value="ps.ex.recharge" />
+			<entry key="x-dead-letter-routing-key" value="auto_check" />
+		</rabbit:queue-arguments>
+	</rabbit:queue>
+	
+	<rabbit:queue name="recharge_ac" durable="true" auto-delete="false" exclusive="false" />
+	
+	<rabbit:queue name="recharge_pc" durable="true" auto-delete="false" exclusive="false" />
+	
+	<!--定义topic-exchange 绑定队列关系 -->
+	<rabbit:direct-exchange name="ps.ex.recharge" durable="true" auto-delete="false">
+		<rabbit:bindings>
+			<rabbit:binding queue="recharge_cc" key="client_callback" />
+			<rabbit:binding queue="recharge_cct" key="client_callback_timeout" />
+			<rabbit:binding queue="recharge_pc" key="pay_callback" />
+			<rabbit:binding queue="recharge_ac" key="auto_check" />
+			<rabbit:binding queue="recharge_act" key="auto_check_timeout" />
+		</rabbit:bindings>
+	</rabbit:direct-exchange> 
+	<!-- **************************************充值结束  end ***************************************** -->
+	
+
+	<!-- **************************************提现开始  begin***************************************** -->
+	<rabbit:queue name="withdraw_cct" durable="true" auto-delete="false" exclusive="false" >
+		<rabbit:queue-arguments>
+			<entry key="x-dead-letter-exchange" value="ps.ex.withdraw" />
+			<entry key="x-dead-letter-routing-key" value="client_callback" />
+		</rabbit:queue-arguments>
+	</rabbit:queue>
+	
+	<rabbit:queue name="withdraw_cc" durable="true" auto-delete="false" exclusive="false" />
+	
+	<rabbit:queue name="withdraw_act" durable="true" auto-delete="false" exclusive="false" >
+		<rabbit:queue-arguments>
+			<entry key="x-dead-letter-exchange" value="ps.ex.withdraw" />
+			<entry key="x-dead-letter-routing-key" value="auto_check" />
+		</rabbit:queue-arguments>
+	</rabbit:queue>
+	
+	<rabbit:queue name="withdraw_ac" durable="true" auto-delete="false" exclusive="false" />
+	
+	<rabbit:queue name="withdraw_pc" durable="true" auto-delete="false" exclusive="false" />
+	
+	<!--定义topic-exchange 绑定队列关系 -->
+	<rabbit:direct-exchange name="ps.ex.withdraw" durable="true" auto-delete="false">
+		<rabbit:bindings>
+			<rabbit:binding queue="withdraw_cc" key="client_callback" />
+			<rabbit:binding queue="withdraw_cct" key="client_callback_timeout" />
+			<rabbit:binding queue="withdraw_pc" key="pay_callback" />
+			<rabbit:binding queue="withdraw_ac" key="auto_check" />
+			<rabbit:binding queue="withdraw_act" key="auto_check_timeout" />
+		</rabbit:bindings>
+	</rabbit:direct-exchange> 
+	<!-- **************************************提现结束   end***************************************** -->
+	
+	
+	<!-- **************************************操作日志开始  begin***************************************** -->
+	<rabbit:queue name="system_ol" durable="true" auto-delete="false" exclusive="false" />
+	<rabbit:direct-exchange name="ps.ex.system" durable="true" auto-delete="false">
+		<rabbit:bindings>
+			<rabbit:binding queue="system_ol" key="system_operation_log" />
+		</rabbit:bindings>
+	</rabbit:direct-exchange> 
+	
+	<rabbit:queue name="ecps_tl" durable="true" auto-delete="false" exclusive="false" />
+	<rabbit:direct-exchange name="ps.ex.system" durable="true" auto-delete="false">
+		<rabbit:bindings>
+			<rabbit:binding queue="ecps_tl" key="ecps_trade_log" />
+		</rabbit:bindings>
+	</rabbit:direct-exchange> 
+	<!-- **************************************操作日志结束  end***************************************** -->
+	
+	<!-- **************************************联机首笔交易开始  begin***************************************** -->
+	<rabbit:queue name="online_ft" durable="true" auto-delete="false" exclusive="false" />
+	<rabbit:direct-exchange name="ps.ex.onlineRate" durable="true" auto-delete="false">
+		<rabbit:bindings>
+			<rabbit:binding queue="online_ft" key="first_trade" />
+		</rabbit:bindings>
+	</rabbit:direct-exchange> 
+	<!-- **************************************联机首笔交易结束  end***************************************** -->
+	
+	<!-- **************************************网关开始  begin***************************************** -->
+	<rabbit:queue name="gateway_cct" durable="true" auto-delete="false" exclusive="false" >
+		<rabbit:queue-arguments>
+			<entry key="x-dead-letter-exchange" value="ps.ex.gateway" />
+			<entry key="x-dead-letter-routing-key" value="client_callback" />
+		</rabbit:queue-arguments>
+	</rabbit:queue>
+	
+	<rabbit:queue name="gateway_cc" durable="true" auto-delete="false" exclusive="false" />
+	<rabbit:direct-exchange name="ps.ex.gateway" durable="true" auto-delete="false">
+		<rabbit:bindings>
+			<rabbit:binding queue="gateway_cct" key="client_callback_timeout" />
+			<rabbit:binding queue="gateway_cc" key="client_callback" />
+		</rabbit:bindings>
+	</rabbit:direct-exchange> 
+	<!-- **************************************网关结束  end***************************************** -->
+	
+	<!-- **************************************批处理开始  begin***************************************** -->
+	<rabbit:queue name="batch_cct" durable="true" auto-delete="false" exclusive="false" >
+		<rabbit:queue-arguments>
+			<entry key="x-dead-letter-exchange" value="ps.ex.batchExecute" />
+			<entry key="x-dead-letter-routing-key" value="client_callback_timeout" />
+		</rabbit:queue-arguments>
+	</rabbit:queue>
+	
+	<rabbit:queue name="batch_cc" durable="true" auto-delete="false" exclusive="false" />
+	
+	<rabbit:queue name="batch_execute" durable="true" auto-delete="false" exclusive="false" />
+	<rabbit:queue name="generate_result_execute" durable="true" auto-delete="false" exclusive="false" />
+	<rabbit:queue name="batch_wp" durable="true" auto-delete="false" exclusive="false" />
+	<rabbit:queue name="batch_opa" durable="true" auto-delete="false" exclusive="false" />
+	<rabbit:direct-exchange name="ps.ex.batchExecute" durable="true" auto-delete="false">
+		<rabbit:bindings>
+			<rabbit:binding queue="batch_execute" key="batch_execute" />
+			<rabbit:binding queue="generate_result_execute" key="generate_result_execute	" />
+			<rabbit:binding queue="batch_opa" key="open_acc" />
+			<rabbit:binding queue="batch_wp" key="batch_wp" />
+			<rabbit:binding queue="batch_cct" key="client_callback_timeout" />
+			<rabbit:binding queue="batch_cc" key="client_callback" />
+		</rabbit:bindings>
+	</rabbit:direct-exchange> 
+	<!-- **************************************批处理结束  end***************************************** -->
+	
+	<!-- **************************************网联交易开始  begin***************************************** -->
+	<rabbit:queue name="nucc_cnt" durable="true" auto-delete="false" exclusive="false" >
+		<rabbit:queue-arguments>
+			<entry key="x-dead-letter-exchange" value="ps.ex.nuccExchange" />
+			<entry key="x-dead-letter-routing-key" value="check_notify" />
+		</rabbit:queue-arguments>
+	</rabbit:queue>
+	
+	<rabbit:queue name="nucc_cn" durable="true" auto-delete="false" exclusive="false" />
+	<rabbit:queue name="nucc_co" durable="true" auto-delete="false" exclusive="false" />
+	<rabbit:direct-exchange name="ps.ex.nuccExchange" durable="true" auto-delete="false">
+		<rabbit:bindings>
+			<rabbit:binding queue="nucc_cnt" key="check_notify_timeout" />
+			<rabbit:binding queue="nucc_cn" key="check_notify" />
+			<rabbit:binding queue="nucc_co" key="check_online" />
+		</rabbit:bindings>
+	</rabbit:direct-exchange> 
+	<!-- **************************************网联交易结束  end***************************************** -->
+	
+	<!-- **************************************网关支付回调开始  begin***************************************** -->
+		<rabbit:queue name="netpay_cct" durable="true" auto-delete="false" exclusive="false" >
+		<rabbit:queue-arguments>
+			<entry key="x-dead-letter-exchange" value="ps.ex.netpay" />
+			<entry key="x-dead-letter-routing-key" value="client_callback" />
+		</rabbit:queue-arguments>
+	</rabbit:queue>
+	
+	<rabbit:queue name="netpay_cc" durable="true" auto-delete="false" exclusive="false" />
+	
+	<rabbit:queue name="netpay_pc" durable="true" auto-delete="false" exclusive="false" />
+	
+	<!--定义topic-exchange 绑定队列关系 -->
+	<rabbit:direct-exchange name="ps.ex.netpay" durable="true" auto-delete="false">
+		<rabbit:bindings>
+			<rabbit:binding queue="netpay_cc" key="client_callback" />
+			<rabbit:binding queue="netpay_cct" key="client_callback_timeout" />
+			<rabbit:binding queue="netpay_pc" key="pay_callback" />
+		</rabbit:bindings>
+	</rabbit:direct-exchange> 
+<!-- **************************************网关支付回调结束  end ***************************************** -->
+
+
+<!-- **************************************代扣回调开始  begin***************************************** -->
+		<rabbit:queue name="deduct_cct" durable="true" auto-delete="false" exclusive="false" >
+		<rabbit:queue-arguments>
+			<entry key="x-dead-letter-exchange" value="ps.ex.deduct" />
+			<entry key="x-dead-letter-routing-key" value="client_callback" />
+		</rabbit:queue-arguments>
+	</rabbit:queue>
+	
+	<rabbit:queue name="deduct_cc" durable="true" auto-delete="false" exclusive="false" />
+	
+	<rabbit:queue name="deduct_pc" durable="true" auto-delete="false" exclusive="false" />
+	
+	<!--定义topic-exchange 绑定队列关系 -->
+	<rabbit:direct-exchange name="ps.ex.deduct" durable="true" auto-delete="false">
+		<rabbit:bindings>
+			<rabbit:binding queue="deduct_cc" key="client_callback" />
+			<rabbit:binding queue="deduct_cct" key="client_callback_timeout" />
+			<rabbit:binding queue="deduct_pc" key="pay_callback" />
+		</rabbit:bindings>
+	</rabbit:direct-exchange> 
+<!-- **************************************代扣回调结束  end ***************************************** -->
+	
+	
+<!-- **************************************二代来账通知回调开始  begin***************************************** -->
+		<rabbit:queue name="rechargenotice_cct" durable="true" auto-delete="false" exclusive="false" >
+		<rabbit:queue-arguments>
+			<entry key="x-dead-letter-exchange" value="ps.ex.rechargenotice" />
+			<entry key="x-dead-letter-routing-key" value="client_callback" />
+		</rabbit:queue-arguments>
+	</rabbit:queue>
+	
+	<rabbit:queue name="rechargenotice_cc" durable="true" auto-delete="false" exclusive="false" />
+	
+	<!--定义topic-exchange 绑定队列关系 -->
+	<rabbit:direct-exchange name="ps.ex.rechargenotice" durable="true" auto-delete="false">
+		<rabbit:bindings>
+			<rabbit:binding queue="rechargenotice_cc" key="client_callback" />
+			<rabbit:binding queue="rechargenotice_cct" key="client_callback_timeout" />
+
+		</rabbit:bindings>
+	</rabbit:direct-exchange> 
+<!-- **************************************二代来账通知回调结束  end ***************************************** -->
+
+<!-- **************************************限额结束  begin ***************************************** -->
+	<rabbit:queue name="quota_cc" durable="true" auto-delete="false" exclusive="false" />
+	
+	<!--定义topic-exchange 绑定队列关系 -->
+	<rabbit:direct-exchange name="ps.ex.quota" durable="true" auto-delete="false">
+		<rabbit:bindings>
+			<rabbit:binding queue="quota_cc" key="quota_cancel" />
+		</rabbit:bindings>
+	</rabbit:direct-exchange> 
+<!-- **************************************限额结束  end ***************************************** -->
+	
+	
+	<!-- 队列监听配置 ,如果队列不配置监听类，则管理控制台不会自动创建队列！！！-->
+	<bean name="seekerListener" class="seeker.listener.SeekerListener"></bean> 
+ 	 <rabbit:listener-container connection-factory="connectionFactory" acknowledge="auto" concurrency= "4">
+			<rabbit:listener queues="quota_cc,nucc_cn,nucc_co,batch_cc,batch_wp,batch_opa,batch_execute,generate_result_execute,gateway_cc,online_ft,system_ol" ref="seekerListener" />
+			
+			<rabbit:listener queues="recharge_cc,withdraw_cc,recharge_ac,withdraw_ac,recharge_pc,withdraw_pc" ref="seekerListener" />
+			
+			<rabbit:listener queues="netpay_cc,deduct_cc,netpay_pc,deduct_pc,rechargenotice_cc" ref="seekerListener" />
+	</rabbit:listener-container> 
+</beans>

@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+  <title>Query By ElasticSearch</title>
+  <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
+  <link rel="stylesheet" href="lib/layui-v2.5.5/css/layui.css"/>
+  
+  <style type="text/css">
+	    .layui-table th{
+		  border: 1px solid #cad9ea;
+	            color: #666;
+	            height: 25px;
+	            text-align: center;
+	     }
+	    .layui-table td{
+	     border: 1px solid #cad9ea;
+	            color: #666;
+	            height: 25px;
+	            text-align: center;
+	    }
+  		table
+        {
+            border-collapse: collapse;
+            margin: 0 auto;
+            text-align: center;
+        }
+        table td, table th
+        {
+            border: 1px solid #cad9ea;
+            color: #666;
+            height: 25px;
+            text-align: center;
+        }
+        table thead th
+        {
+            background-color: #CCE8EB;
+            width: 100px;
+        }
+        table tr:nth-child(odd)
+        {
+            background: #fff;
+        }
+        table tr:nth-child(even)
+        {
+            background: #F5FAFA;
+        }
+  		.tb{
+	  	margin:0 100px 0 20px;
+	  	width:1000px;
+	  	}
+	  	.myclass {
+	  	margin-top: 20px;
+		}
+  </style>
+</head>
+<body>
+ 	 <div class="layui-container" id="layui-container">
+	   		<!-- 查询区begin -->
+			<div class="layui-form-item myclass">
+				<div class="layui-inline">
+					<label class="layui-form-label">title:</label>
+					<div class="layui-input-inline" style="width:300px;">
+						<input type="text" id="title" name="title"  th:value="${title}" required="true"  title="title" placeholder="请输入title"  autocomplete="off" class="layui-input"/>
+					</div>
+					<button type="button"  class="layui-btn bny-sumit-button" onClick="loadData()">查询</button>
+					<button type="reset" class="layui-btn bny-sumit-button" onClick="resetfresh()">重置</button>
+				</div>
+			</div>
+			<!-- 查询区end -->
+			<!-- 数据区域 begin -->	
+			<div class="layui-form tb">
+				  <table class="layui-table">
+				    <colgroup>
+				      <col width="30px">
+				      <col width="270px">
+				      <col >
+				      <col >
+				      <col >
+				      <col >
+				    </colgroup>
+				    <thead>
+				      <tr>
+				        <th>id</th>
+				        <th>title</th>
+				        <th>category</th>
+				        <th>brand</th>
+				        <th>image</th>
+				      </tr> 
+				    </thead>
+				    <tbody>
+				       <tr  th:each="ite,infoStat : ${data}" >
+							<td th:utext="${ite['id'] != null ? ite['id']:''}"></td>
+							<td th:utext="${ite['title'] != null ? ite['title']:''}"></td>
+							<td th:utext="${ite['category'] != null ? ite['category']:''}"></td>
+							<td th:utext="${ite['brand'] != null ? ite['brand']:''}"></td>
+							<td th:utext="${ite['images'] != null ? ite['images']:''}"></td>
+					  </tr>
+				    </tbody>
+				  </table>
+			</div>
+			<!-- 数据区域 end -->	
+		</div>
+		
+<script type="text/javascript" src="lib/jquery-3.4.1/jquery-3.4.1.min.js"></script>
+<script src="lib/layui-v2.5.5/layui.js"></script>
+<script>
+/**
+ * 重置功能
+ */
+function resetfresh(){
+	//window.location.href = "mfcindex";
+	//先清空所有查询条件
+	$("#layui-container").find("input[type=text]").each(function(){
+		$(this).val("");
+    });
+	//重新加载动态表格
+	window.location.href="index";
+} 
+
+function loadData(){
+	var title = $("#title").val();
+	window.location.href="index?title="+title;
+}
+
+/**
+ * 声明layui组件
+ */
+layui.use(['form','layer','laydate','table','laypage'], function(){
+    
+ var form = layui.form;
+ var layer = layui.layer;
+ var laydate = layui.laydate;
+ var laypage = layui.laypage;
+ 
+ 
+}); 
+
+</script> 
+</body>
+</html>
